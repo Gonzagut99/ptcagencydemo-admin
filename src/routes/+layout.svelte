@@ -1,22 +1,35 @@
 <script lang="ts">
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import Header from './Header.svelte';
 	import '../app.css';
-	
+	import { browser } from '$app/environment';
+
 	let { children } = $props();
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: {
+				enabled: browser
+			}
+		}
+	});
 </script>
 
 <div class="app">
 	<Header />
 
-	<main>
-		{@render children()}
-	</main>
+	<QueryClientProvider client={queryClient}>
+		<main>
+			{@render children()}
+		</main>
+		<SvelteQueryDevtools />
+	</QueryClientProvider>
 
-	<footer>
+	<!-- <footer>
 		<p>
 			visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
 		</p>
-	</footer>
+	</footer> -->
 </div>
 
 <style>

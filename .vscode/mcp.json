@@ -1,0 +1,15 @@
+{
+	"servers": {
+		"jsrepo": {
+			"command": "npx",
+			"args": ["jsrepo", "mcp"]
+		},
+		"shadcn": {
+			"command": "npx",
+			"args": ["shadcn@latest", "mcp"]
+		},
+		"svelte": {
+			"url": "https://mcp.svelte.dev/mcp"
+		}
+	}
+}
