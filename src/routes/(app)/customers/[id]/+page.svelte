@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { useCustomer } from '$lib/api/queries/customers';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
@@ -9,7 +9,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 
-	const customerId = $derived(parseInt($page.params.id || '0'));
+	const customerId = $derived(parseInt(page.params.id || '0'));
 	const customerQuery = $derived(useCustomer(customerId));
 
 	const customer = $derived(customerQuery.data);
@@ -131,9 +131,9 @@
 							<FileText class="h-5 w-5 text-muted-foreground" />
 							<div>
 								<p class="text-sm text-muted-foreground">Tipo de Documento</p>
-								<Badge variant="secondary">
+								<!-- <Badge variant="secondary">
 									{documentTypeLabels[customer.idDocumentType] || customer.idDocumentType}
-								</Badge>
+								</Badge> -->
 							</div>
 						</div>
 						<div class="flex items-center gap-3">

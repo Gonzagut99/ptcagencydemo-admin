@@ -1,8 +1,7 @@
 <script lang="ts">
-
 	import Card from '$lib/components/ui/card/card.svelte';
 	import * as CardContent from '$lib/components/ui/card';
-	import { FileText, Users, UserCog, Bell } from '@lucide/svelte';
+	import { FileText, Users, UserCog, Bell } from 'lucide-svelte';
 
 	const stats = [
 		{
