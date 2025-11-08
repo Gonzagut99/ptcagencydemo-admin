@@ -4,26 +4,32 @@
 	import { page } from '$app/state';
 	import { dynamicRouteDictionaryContext } from './route-breadcrumb-context';
 	import { sidebarStaticRoutesDictionary } from '../custom-sidebar/sidebar-data';
+	import { onMount } from 'svelte';
+	import type { DynamicRouteDictionary } from './dynamic-routes-breadcrumb.types';
 	type Segment = { segment: string; value: string; url: string };
 	type Dictionary = Record<string, string>;
+	const currentDynamicRoutesDictionary = $derived(
+		dynamicRouteDictionaryContext.get() ?? []
+	);
 	class DynamicBreadcrumbTitleDictionary {
 		private homeEndpoint: string = this.getHomeEndpoint(PUBLIC_HOME_ENDPOINT || 'home');
 		private staticRouteDictionary: Record<string, string> = sidebarStaticRoutesDictionary;
-		private dynamicSegmentsDictionary = dynamicRouteDictionaryContext.get();
-		#segments: Segment[] = $state([]);
+		#dynamicSegmentsDictionary: DynamicRouteDictionary[] = $derived(currentDynamicRoutesDictionary);
+		#segments: Segment[] = $derived.by(() =>
+			this.getRouteSegments(page.route.id || '', page.url.pathname)
+		);
 		#dictionary: Dictionary = $derived.by(() =>
 			this.assignBreadcrumbTitles(this.staticRouteDictionary)
 		);
 
-		constructor() {
-		}
-
-		private getRouteSegments(route: string, pathName: string): {
-			segment:string;
-			value:string;
-			url:string;
-		}[] {
-			const segments = route.split('/').filter((segment) => (segment.length > 0 && !this.isGroupedRoute(segment)) || segment === this.getHomeSegmentGroupedRoute());
+		private getRouteSegments(route: string, pathName: string): Segment[] {
+			const segments = route
+				.split('/')
+				.filter(
+					(segment) =>
+						(segment.length > 0 && !this.isGroupedRoute(segment)) ||
+						segment === this.getHomeSegmentGroupedRoute()
+				);
 			const values = pathName.split('/').filter((segment) => segment.length > 0);
 			const urls = values.map((_, index) => '/' + values.slice(0, index + 1).join('/'));
 			let finalSegments: Segment[] = [];
@@ -37,8 +43,8 @@
 				} else {
 					finalSegments.push({
 						segment,
-						value: values[index-1],
-						url: urls[index-1]
+						value: values[index - 1],
+						url: urls[index - 1]
 					});
 				}
 			});
@@ -73,7 +79,7 @@
 		}
 
 		private assignBreadcrumbTitles(staticRouteDictionary: Dictionary): Dictionary {
-			const segments = this.getRouteSegments(page.route.id || '', page.url.pathname)
+			const segments = this.getRouteSegments(page.route.id || '', page.url.pathname);
 			const dictionary: Dictionary = {
 				[this.homeEndpoint]: 'Inicio'
 			};
@@ -86,7 +92,7 @@
 				}
 				if (this.isDynamicSegment(segment)) {
 					const dynamicSegment = segment.slice(1, -1);
-					const dynamicEntry = this.dynamicSegmentsDictionary.find(
+					const dynamicEntry = this.#dynamicSegmentsDictionary.find(
 						(entry) => entry.slug === dynamicSegment
 					);
 					if (dynamicEntry) {
@@ -103,7 +109,6 @@
 				}
 				dictionary[segment] = segment;
 			});
-			this.#segments = segments;
 			return dictionary;
 		}
 
@@ -125,26 +130,38 @@
 		get segments(): Segment[] {
 			return this.#segments;
 		}
+
+		get dynamicSegmentsDictionary() {
+			return this.#dynamicSegmentsDictionary;
+		}
 	}
 
-	const breadcrumbTitleDictionary = new DynamicBreadcrumbTitleDictionary();
+	let breadcrumbTitleDictionary: DynamicBreadcrumbTitleDictionary | undefined = $state(
+	);
+
+	onMount(() => {
+		if (!breadcrumbTitleDictionary) {
+			breadcrumbTitleDictionary = new DynamicBreadcrumbTitleDictionary();
+		}
+	});
+
+	$inspect(breadcrumbTitleDictionary?.segments);
+	$inspect(breadcrumbTitleDictionary?.dictionary);
+	$inspect(breadcrumbTitleDictionary?.dynamicSegmentsDictionary);
 </script>
 
 <Breadcrumb.Root>
 	<Breadcrumb.List>
-		<Breadcrumb.Item class="hidden md:block">
-			<Breadcrumb.Link href="##">Building Your Application</Breadcrumb.Link>
-		</Breadcrumb.Item>
-		<Breadcrumb.Separator class="hidden md:block" />
-		<Breadcrumb.Item>
-			<Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
-		</Breadcrumb.Item>
-		{#each breadcrumbTitleDictionary.segments as { segment, url }, index }
-			<Breadcrumb.Item aria-current={index === breadcrumbTitleDictionary.segments.length - 1 ? 'page' : undefined}>
-				<Breadcrumb.Link href={url}>
-					{breadcrumbTitleDictionary.getTitle(segment)}
-				</Breadcrumb.Link>
-			</Breadcrumb.Item>
-		{/each}
+		{#if breadcrumbTitleDictionary !== undefined}
+			{#each breadcrumbTitleDictionary.segments as { segment, url }, index}
+				<Breadcrumb.Item
+					aria-current={index === breadcrumbTitleDictionary.segments.length - 1 ? 'page' : undefined}
+				>
+					<Breadcrumb.Link href={url}>
+						{breadcrumbTitleDictionary.getTitle(segment)}
+					</Breadcrumb.Link>
+				</Breadcrumb.Item>
+			{/each}
+		{/if}
 	</Breadcrumb.List>
 </Breadcrumb.Root>

@@ -4,8 +4,15 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import AppSidebar from '$lib/components/layout/custom-sidebar/app-sidebar.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
+	import { dynamicRouteDictionaryContext } from '$lib/components/layout/custom-breadcrumb/route-breadcrumb-context';
+	import type { DynamicRouteDictionary } from '$lib/components/layout/custom-breadcrumb/dynamic-routes-breadcrumb.types';
 
 	let { children } = $props();
+
+	// Inicializar el contexto INMEDIATAMENTE con array vacío para que el breadcrumb no falle
+	// Los layouts hijos pueden actualizarlo con sus rutas dinámicas en su onMount
+	const dynamicRoutes: DynamicRouteDictionary[] = [];
+	dynamicRouteDictionaryContext.set(dynamicRoutes);
 
 	// Initialize sidebar store if in browser
 	if (browser) {

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/state';
 
 	const segments = page.route.id?.split('/').filter((segment) => segment.length > 0) ?? [];
@@ -17,6 +17,6 @@
 	>
 	<span>{'Params: '}{JSON.stringify(page.params)}</span>
 	<span>{'All parts: '}{JSON.stringify(page.route.id)}</span>
-    <span>{'Endpoint segments: '}{JSON.stringify(segments)}</span>
-    <span>{'url config: '}{JSON.stringify(page.url.pathname)}</span>
+	<span>{'Endpoint segments: '}{JSON.stringify(segments)}</span>
+	<span>{'url config: '}{JSON.stringify(page.url.pathname)}</span>
 </div>

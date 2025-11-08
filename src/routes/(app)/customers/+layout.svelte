@@ -1,20 +1,23 @@
 <script lang="ts">
+	import type { DynamicRouteDictionary } from '$lib/components/layout/custom-breadcrumb/dynamic-routes-breadcrumb.types';
 	import { dynamicRouteDictionaryContext } from '$lib/components/layout/custom-breadcrumb/route-breadcrumb-context';
-	import { onMount } from 'svelte';
 
-    let { children } = $props();
+	let { children } = $props();
 
-	onMount(() => {
-		const dynamicRoutes: {
-			slug: string;
-			name: string;
-		}[] = [
-			{ slug: 'id', name: 'Detalle del Cliente' },
-			{ slug: 'contactId', name: 'Detalle del Contacto' }
-			// Add more dynamic routes and their titles here
-		];
-		dynamicRouteDictionaryContext.set(dynamicRoutes);
-	});
+	const dynamicRoutes: DynamicRouteDictionary[] = [
+		{ slug: 'id', name: 'Detalle del Cliente' },
+		{ slug: 'contactId', name: 'Detalle del Contacto' }
+	];
+
+	dynamicRouteDictionaryContext.set(dynamicRoutes);
+
+	// onDestroy(() => {
+	// 	// Optionally clear the context when this layout is destroyed
+	// 	dynamicRouteDictionaryContext.set([]);
+	// });
+
+	// const currentDynamicRoutes = $derived(dynamicRouteDictionaryContext.get());
+	// $inspect(currentDynamicRoutes);
 </script>
 
 {@render children()}

@@ -2,7 +2,6 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import AutomaticBreadcrumb from './layout/custom-breadcrumb/automatic-breadcrumb.svelte';
 </script>
 
@@ -22,7 +21,7 @@
 				target="_blank"
 				rel="noopener noreferrer"
 			>
-				GitHub
+				Hola
 			</Button>
 		</div>
 	</div>
