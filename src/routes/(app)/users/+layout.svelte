@@ -1,13 +1,12 @@
 <script lang="ts">
 	import type { DynamicRouteDictionary } from '$lib/components/layout/custom-breadcrumb/dynamic-routes-breadcrumb.types';
 	import { dynamicRouteDictionaryContext } from '$lib/components/layout/custom-breadcrumb/route-breadcrumb-context.svelte';
-	import { onDestroy } from 'svelte';
 
 	let { children } = $props();
 
 	const dynamicRoutes: DynamicRouteDictionary[] = [
-		{ slug: 'id', name: 'Detalle del Cliente' },
-		{ slug: 'contactId', name: 'Detalle del Contacto' }
+		{ slug: 'userId', name: 'Detalle del usuario' },
+		{ slug: 'contactId', name: 'Detalle del staff' }
 	];
 
 	dynamicRouteDictionaryContext.exists() &&

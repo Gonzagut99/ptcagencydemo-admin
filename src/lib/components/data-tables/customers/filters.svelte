@@ -26,10 +26,16 @@
 	const hasActiveFilters = $derived(documentTypeFilter.length > 0 || searchQuery.length > 0);
 
 	let selectedDocType = $state<{ value: string; label: string }>(documentTypeOptions[0]);
+	let selectedValue = $state<string>('');
 
 	$effect(() => {
 		documentTypeFilter = selectedDocType.value;
 	});
+
+	const triggerContent = $derived(
+		documentTypeOptions.find((option) => option.value === selectedValue)?.label ??
+			'Tipo de Documento'
+	);
 </script>
 
 <div class="flex flex-wrap gap-4">
@@ -40,15 +46,16 @@
 		class="max-w-sm"
 	/>
 
-	<Select.Root
+	<!-- <Select.Root
 		onSelectedChange={(v) => {
 			if (v) {
 				selectedDocType = v;
 			}
 		}}
-	>
+	> -->
+	<Select.Root type="single" bind:value={selectedValue}>
 		<Select.Trigger class="w-[200px]">
-			<Select.Value placeholder="Tipo de Documento" />
+			{triggerContent}
 		</Select.Trigger>
 		<Select.Content>
 			{#each documentTypeOptions as option}

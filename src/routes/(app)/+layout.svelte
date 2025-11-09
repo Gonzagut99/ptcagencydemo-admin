@@ -4,15 +4,19 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import AppSidebar from '$lib/components/layout/custom-sidebar/app-sidebar.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
-	import { dynamicRouteDictionaryContext } from '$lib/components/layout/custom-breadcrumb/route-breadcrumb-context';
+	import { DynamicRouteDictionaryContext, dynamicRouteDictionaryContext } from '$lib/components/layout/custom-breadcrumb/route-breadcrumb-context.svelte';
 	import type { DynamicRouteDictionary } from '$lib/components/layout/custom-breadcrumb/dynamic-routes-breadcrumb.types';
 
 	let { children } = $props();
 
+	//CONFIGURACION NECESARIA PARA EL BREADCRUMB AUTOMATICO
 	// Inicializar el contexto INMEDIATAMENTE con array vacío para que el breadcrumb no falle
 	// Los layouts hijos pueden actualizarlo con sus rutas dinámicas en su onMount
 	const dynamicRoutes: DynamicRouteDictionary[] = [];
-	dynamicRouteDictionaryContext.set(dynamicRoutes);
+	if (!dynamicRouteDictionaryContext.exists()) {
+		dynamicRouteDictionaryContext.set(new DynamicRouteDictionaryContext());
+		dynamicRouteDictionaryContext.get().dynamicRoutes = dynamicRoutes;
+	}
 
 	// Initialize sidebar store if in browser
 	if (browser) {
@@ -26,12 +30,12 @@
 	<AppSidebar variant="inset" />
 	<Sidebar.Inset>
 		<SiteHeader />
-		<div class="flex flex-1 flex-col">
+		<article class="flex flex-1 flex-col">
 			<div class="@container/main flex flex-1 flex-col gap-2">
-				<div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+				<div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 md:px-6 lg:px-8 ">
 					{@render children()}
 				</div>
 			</div>
-		</div>
+		</article>
 	</Sidebar.Inset>
 </Sidebar.Provider>
