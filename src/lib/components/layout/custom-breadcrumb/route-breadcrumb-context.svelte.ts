@@ -21,6 +21,8 @@ export class DynamicRouteDictionaryContext {
 		this.#dynamicRoutes = [];
 	}
 }
+
+const SYMBOL_KEY = 'scn-dynamic-route-dictionary-context';
 export const dynamicRouteDictionaryContext = new Context<DynamicRouteDictionaryContext>(
-	'<dynamic-route-dictionary-context>'
+	SYMBOL_KEY
 );

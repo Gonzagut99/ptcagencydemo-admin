@@ -26,7 +26,7 @@ class SidebarState {
 	openMobile = $state(false);
 	setOpen: SidebarStateProps["setOpen"];
 	#isMobile: IsMobile;
-	state = $derived.by(() => (this.open ? "expanded" : "collapsed"));
+	state: 'expanded' | 'collapsed' = $derived.by(() => (this.open ? "expanded" : "collapsed"));
 
 	constructor(props: SidebarStateProps) {
 		this.setOpen = props.setOpen;
@@ -58,6 +58,8 @@ class SidebarState {
 			: this.setOpen(!this.open);
 	};
 }
+
+export type { SidebarState };
 
 const SYMBOL_KEY = "scn-sidebar";
 
