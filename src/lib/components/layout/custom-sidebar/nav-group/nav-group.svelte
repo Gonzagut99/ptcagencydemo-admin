@@ -6,7 +6,7 @@
 	} from '$lib/components/ui/collapsible';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { useSidebar } from '$lib/components/ui/sidebar';
-	import { ChevronRight, ChevronRightIcon } from '@lucide/svelte';
+	import { ChevronRightIcon } from '@lucide/svelte';
 	import { useSidebarNavigation } from '../navigation-context.svelte';
 	import type { NavCollapsible, NavigationGroup, NavigationItem } from '../sidebar-types';
 	import NavBadge from './nav-badge.svelte';
@@ -18,14 +18,13 @@
 		DropdownMenuSeparator
 	} from '$lib/components/ui/dropdown-menu';
 	import DropdownMenuItem from '$lib/components/ui/dropdown-menu/dropdown-menu-item.svelte';
-	import { hasNavPermission } from './utils/nav-permission';
-	import { Icon } from 'svelte-sonner';
-	import { size } from 'zod';
 	const { setOpenMobile, state } = useSidebar();
 	// const { hasPermission, hasRole, isAuthenticated } = useAuth();
 	const { items, title }: NavigationGroup = $props();
 
 	const sidebarNavigation = useSidebarNavigation();
+
+	
 
 	//auth logic
 	// const filteredItems = items.filter((item) => {
