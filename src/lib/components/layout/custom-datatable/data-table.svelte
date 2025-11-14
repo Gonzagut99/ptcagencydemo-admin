@@ -197,6 +197,9 @@
 				rowSelection = updater;
 			}
 		},
+		// adiciones customizadas
+		
+		
 	});
 
 	let views = [

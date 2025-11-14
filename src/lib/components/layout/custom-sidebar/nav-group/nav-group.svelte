@@ -47,21 +47,20 @@
 
 {#snippet SideBarMenuLink({ item }: { item: NavigationItem })}
 	<Sidebar.MenuItem>
-		<Sidebar.MenuButton
-			tooltipContent={item.title}
-			isActive={sidebarNavigation.isNavItemActive(item)}
-		>
-			<a class="flex items-center gap-2" href={item.url} onclick={() => setOpenMobile(false)}>
-				{#if item.icon}
-					{@const IconComponent = item.icon}
-					<!-- {@const iconProps = item.icon.arguments} -->
-					<IconComponent class="h-4 w-4" />
-				{/if}
-				<span>{item.title}</span>
-				{#if item.badge}
-					<NavBadge>{item.badge}</NavBadge>
-				{/if}
-			</a>
+		<Sidebar.MenuButton tooltipContent={item.title} isActive={sidebarNavigation.isNavItemActive(item)}>
+			{#snippet child({ props })}
+				<a class="flex items-center gap-2" href={item.url} {...props} onclick={() => setOpenMobile(false)}>
+					{#if item.icon}
+						{@const IconComponent = item.icon}
+						<!-- {@const iconProps = item.icon.arguments} -->
+						<IconComponent class="h-4 w-4" />
+					{/if}
+					<span>{item.title}</span>
+					{#if item.badge}
+						<NavBadge>{item.badge}</NavBadge>
+					{/if}
+				</a>
+			{/snippet}
 		</Sidebar.MenuButton>
 	</Sidebar.MenuItem>
 {/snippet}
@@ -143,7 +142,7 @@
 				{#each item.items as subItem (subItem.title)}
 					<DropdownMenuItem>
 						{#snippet child({ props })}
-							<a href={subItem.url} onclick={() => setOpenMobile(false)}>
+							<a href={subItem.url} {...props} onclick={() => setOpenMobile(false)}>
 								{#if subItem.icon}
 									<subItem.icon />
 								{/if}
@@ -160,7 +159,7 @@
 	</Sidebar.MenuItem>
 {/snippet}
 
-<Sidebar.Group class="group-data-[collapsible=icon]:hidden">
+<Sidebar.Group>
 	<Sidebar.GroupLabel>{title}</Sidebar.GroupLabel>
 	<Sidebar.Menu>
 		{#each items as item (`${item.title}-${item.url}`)}

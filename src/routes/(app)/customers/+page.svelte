@@ -50,15 +50,15 @@
 	// Update column filters when filter state changes
 	$effect(() => {
 		const filters: ColumnFiltersState = [];
-		
+
 		if (debouncedSearchQuery) {
 			filters.push({ id: 'firstName', value: debouncedSearchQuery });
 		}
-		
+
 		if (documentTypeFilter) {
 			filters.push({ id: 'idDocumentType', value: documentTypeFilter });
 		}
-		
+
 		columnFilters = filters;
 	});
 
@@ -137,7 +137,7 @@
 					</Button>
 				{/snippet}
 			</Dialog.Trigger>
-			<Dialog.Content class="max-w-2xl max-h-[90vh] overflow-y-auto">
+			<Dialog.Content class="max-h-[90vh] max-w-2xl overflow-y-auto">
 				<Dialog.Header>
 					<Dialog.Title>Crear Nuevo Cliente</Dialog.Title>
 					<Dialog.Description>
@@ -161,7 +161,10 @@
 						{#each headerGroup.headers as header}
 							<Table.Head colspan={header.colSpan}>
 								{#if !header.isPlaceholder}
-									<FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+									<FlexRender
+										content={header.column.columnDef.header}
+										context={header.getContext()}
+									/>
 								{/if}
 							</Table.Head>
 						{/each}
@@ -173,7 +176,9 @@
 					<Table.Row>
 						<Table.Cell colspan={columns.length} class="h-24 text-center">
 							<div class="flex items-center justify-center">
-								<div class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
+								<div
+									class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"
+								></div>
 								Cargando clientes...
 							</div>
 						</Table.Cell>
@@ -208,7 +213,7 @@
 			<Button variant="outline" size="sm" onclick={previousPage} disabled={page === 0}>
 				Anterior
 			</Button>
-			
+
 			<!-- Page numbers -->
 			<div class="flex items-center gap-1">
 				{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -225,12 +230,7 @@
 				{/each}
 			</div>
 
-			<Button
-				variant="outline"
-				size="sm"
-				onclick={nextPage}
-				disabled={page >= totalPages - 1}
-			>
+			<Button variant="outline" size="sm" onclick={nextPage} disabled={page >= totalPages - 1}>
 				Siguiente
 			</Button>
 		</div>
