@@ -1,3 +1,5 @@
+import type { ColumnDef } from "@tanstack/table-core";
+import type { Snippet } from "svelte";
 import { z } from "zod/v4";
 
 export const schema = z.object({
@@ -9,5 +11,11 @@ export const schema = z.object({
 	limit: z.string(),
 	reviewer: z.string(),
 });
+
+export type CustomDatatableProps<TData, TValue> = {
+	columns: ColumnDef<TData, TValue>[]; 
+	data: TData[]; //rows
+	toolbarActions?: Snippet[] ;
+}
 
 export type Schema = z.infer<typeof schema>;

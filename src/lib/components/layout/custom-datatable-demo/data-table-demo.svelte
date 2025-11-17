@@ -1,73 +1,77 @@
 <script lang="ts" module>
-	// export const columns: ColumnDef<Schema>[] = [
-	// 	{
-	// 		id: 'drag',
-	// 		header: () => null,
-	// 		cell: () => renderSnippet(DragHandle)
-	// 	},
-	// 	{
-	// 		id: 'select',
-	// 		header: ({ table }) =>
-	// 			renderComponent(DataTableCheckbox, {
-	// 				checked: table.getIsAllPageRowsSelected(),
-	// 				indeterminate: table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected(),
-	// 				onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
-	// 				'aria-label': 'Select all'
-	// 			}),
-	// 		cell: ({ row }) =>
-	// 			renderComponent(DataTableCheckbox, {
-	// 				checked: row.getIsSelected(),
-	// 				onCheckedChange: (value) => row.toggleSelected(!!value),
-	// 				'aria-label': 'Select row'
-	// 			}),
-	// 		enableSorting: false,
-	// 		enableHiding: false
-	// 	},
-	// 	{
-	// 		accessorKey: 'header',
-	// 		header: 'Header',
-	// 		cell: ({ row }) => renderComponent(DataTableCellViewer, { item: row.original }),
-	// 		enableHiding: false
-	// 	},
-	// 	{
-	// 		accessorKey: 'type',
-	// 		header: 'Section Type',
-	// 		cell: ({ row }) => renderSnippet(DataTableType, { row })
-	// 	},
-	// 	{
-	// 		accessorKey: 'status',
-	// 		header: 'Status',
-	// 		cell: ({ row }) => renderSnippet(DataTableStatus, { row })
-	// 	},
-	// 	{
-	// 		accessorKey: 'target',
-	// 		header: () =>
-	// 			renderSnippet(
-	// 				createRawSnippet(() => ({
-	// 					render: () => '<div class="w-full text-right">Target</div>'
-	// 				}))
-	// 			),
-	// 		cell: ({ row }) => renderSnippet(DataTableTarget, { row })
-	// 	},
-	// 	{
-	// 		accessorKey: 'limit',
-	// 		header: () =>
-	// 			renderSnippet(
-	// 				createRawSnippet(() => ({
-	// 					render: () => '<div class="w-full text-right">Limit</div>'
-	// 				}))
-	// 			),
-	// 		cell: ({ row }) => renderSnippet(DataTableLimit, { row })
-	// 	},
-	// 	{
-	// 		id: 'actions',
-	// 		cell: () => renderSnippet(DataTableActions)
-	// 	}
-	// ];
-	export const datatableStateContextKey = Symbol('datatable-state-key');
+	export const columns: ColumnDef<Schema>[] = [
+		{
+			id: 'drag',
+			header: () => null,
+			cell: () => renderSnippet(DragHandle)
+		},
+		{
+			id: 'select',
+			header: ({ table }) =>
+				renderComponent(DataTableCheckbox, {
+					checked: table.getIsAllPageRowsSelected(),
+					indeterminate: table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected(),
+					onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
+					'aria-label': 'Select all'
+				}),
+			cell: ({ row }) =>
+				renderComponent(DataTableCheckbox, {
+					checked: row.getIsSelected(),
+					onCheckedChange: (value) => row.toggleSelected(!!value),
+					'aria-label': 'Select row'
+				}),
+			enableSorting: false,
+			enableHiding: false
+		},
+		{
+			accessorKey: 'header',
+			header: 'Header',
+			cell: ({ row }) => renderComponent(DataTableCellViewer, { item: row.original }),
+			enableHiding: false
+		},
+		{
+			accessorKey: 'type',
+			header: 'Section Type',
+			cell: ({ row }) => renderSnippet(DataTableType, { row })
+		},
+		{
+			accessorKey: 'status',
+			header: 'Status',
+			cell: ({ row }) => renderSnippet(DataTableStatus, { row })
+		},
+		{
+			accessorKey: 'target',
+			header: () =>
+				renderSnippet(
+					createRawSnippet(() => ({
+						render: () => '<div class="w-full text-right">Target</div>'
+					}))
+				),
+			cell: ({ row }) => renderSnippet(DataTableTarget, { row })
+		},
+		{
+			accessorKey: 'limit',
+			header: () =>
+				renderSnippet(
+					createRawSnippet(() => ({
+						render: () => '<div class="w-full text-right">Limit</div>'
+					}))
+				),
+			cell: ({ row }) => renderSnippet(DataTableLimit, { row })
+		},
+		{
+			accessorKey: 'reviewer',
+			header: 'Reviewer',
+			cell: ({ row }) => renderComponent(DataTableReviewer, { row })
+		},
+		{
+			id: 'actions',
+			cell: () => renderSnippet(DataTableActions)
+		}
+	];
 </script>
 
-<script lang="ts" generics="TData, TValue">
+<script lang="ts">
 	import {
 		getCoreRowModel,
 		getFacetedRowModel,
@@ -81,9 +85,9 @@
 		type Row,
 		type RowSelectionState,
 		type SortingState,
-		type TableOptions,
 		type VisibilityState
-	} from '@tanstack/svelte-table';
+	} from '@tanstack/table-core';
+	import type { Schema } from './schemas.js';
 	import type { Attachment } from 'svelte/attachments';
 	import { RestrictToVerticalAxis } from '@dnd-kit/abstract/modifiers';
 	import { createSvelteTable } from '$lib/components/ui/data-table/data-table.svelte.js';
@@ -114,25 +118,21 @@
 	import { toast } from 'svelte-sonner';
 	import DataTableCheckbox from './data-table-checkbox.svelte';
 	import DataTableCellViewer from './data-table-cell-viewer.svelte';
-	import { createRawSnippet, onMount, setContext } from 'svelte';
+	import { createRawSnippet } from 'svelte';
+	import DataTableReviewer from './data-table-reviewer.svelte';
 	import { DragDropProvider } from '@dnd-kit-svelte/svelte';
 	import { move } from '@dnd-kit/helpers';
 	import { useSortable } from '@dnd-kit-svelte/svelte/sortable';
 	import { Database } from '@lucide/svelte';
-	import { setDatatableState, useDatatableContext } from './use-datatable-state.svelte';
-	import type { CustomDataTableProps } from './datatable-types.svelte';
 
-	let {
-		data,
-		columns,
-		externalGlobalFilter = $bindable()
-	}: CustomDataTableProps<TData, TValue> = $props();
+	let { data }: { data: Schema[] } = $props();
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
 	let sorting = $state<SortingState>([]);
 	let columnFilters = $state<ColumnFiltersState>([]);
 	let rowSelection = $state<RowSelectionState>({});
 	let columnVisibility = $state<VisibilityState>({});
-	const options: TableOptions<TData> = $derived({
+
+	const table = createSvelteTable({
 		get data() {
 			return data;
 		},
@@ -154,7 +154,7 @@
 				return columnFilters;
 			}
 		},
-		//getRowId: (row) => row.id.toString(),
+		getRowId: (row) => row.id.toString(),
 		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
@@ -199,11 +199,6 @@
 		}
 		// adiciones customizadas
 	});
-
-	const table = $derived(createSvelteTable(options));
-	// setDatatableState<TData>(() => table);
-	setDatatableState<TData>(() => table);
-	const datatableState = useDatatableContext<TData>();
 
 	let views = [
 		{
