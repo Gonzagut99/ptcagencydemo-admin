@@ -10,6 +10,8 @@ export type FacetedFilter<TValue> = {
         value: TValue;
         icon?: Component<IconProps>
     }[];
+    onFilterChange?: (value: TValue | TValue[] | undefined | unknown) => void;
+    filterStrategy?: 'checkbox-group' | 'radio-group';
 };
 
 export type DataTableToolbarProps<TData, TValue> = {
