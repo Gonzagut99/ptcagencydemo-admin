@@ -8,6 +8,8 @@
 	} from './data-table-faceted-filter.svelte';
 	import type { DataTableToolbarProps } from './data-table-toolbar.types.svelte';
 	import DataTableViewOptions from './data-table-view-options.svelte';
+	import { untrack } from 'svelte';
+	import DataTableActions from '../table-actions/data-table-actions.svelte';
 
 	const table = useDatatableContext<TData>();
 
@@ -30,7 +32,7 @@
 			if (onGlobalFilterChange) {
 				onGlobalFilterChange(currentFilterValue);
 			} else {
-				table.setGlobalFilter(currentFilterValue);
+				untrack(() => table.setGlobalFilter(currentFilterValue));
 			}
 		}
 	});
@@ -86,9 +88,11 @@
 	<div class="flex items-center space-x-2">
 		<!-- {typeof toolbarActions === 'function' ? toolbarActions(table) : toolbarActions} -->
 		{#if toolbarActions}
-			{@render toolbarActions({
-				table
-			})}
+			<DataTableActions>
+				{@render toolbarActions({
+					table
+				})}
+			</DataTableActions>
 		{/if}
 		<!-- <DataTableViewOptions {table} /> -->
 		<DataTableViewOptions />

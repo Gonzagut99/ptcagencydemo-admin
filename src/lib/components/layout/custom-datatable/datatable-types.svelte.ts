@@ -1,21 +1,26 @@
-import type { ColumnDef, Row, Table } from '@tanstack/svelte-table';
+import type { ColumnDef, Row } from '@tanstack/svelte-table';
 import type { Snippet } from 'svelte';
-import type { FacetedFilter } from './toolbar/data-table-toolbar.types.svelte';
-import type { ServerPaginationTanstackTableConfig } from './custom-pagination-types';
+import type {
+	FacetedFilter,
+	ToolbarActionsSnippet
+} from './toolbar/data-table-toolbar.types.svelte';
+import type { ServerPaginationTanstackTableConfig } from './pagination/custom-pagination-types';
+import type { BasicEntity } from '$lib/api/config';
 
 export type ColumnVisibility<T> = Partial<Record<keyof T, boolean>>;
 
-export type CustomDataTableProps<TData, TValue> = {
+export type CustomDataTableProps<TData extends BasicEntity, TValue> = {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
-	toolbarActions?: Snippet<[]> | ((table: Table<TData>) => Snippet<[]>);
+	toolbarActions?: ToolbarActionsSnippet<TData>;
 	filterPlaceholder?: string;
 	facetedFilters?: FacetedFilter<TValue>[];
 	// Nuevas props para paginación del servidor
 	serverPagination?: ServerPaginationTanstackTableConfig;
 	getRowCanExpand?: (row: Row<TData>) => boolean;
 	getSubRows?: ((originalRow: TData, index: number) => TData[] | undefined) | undefined;
-	renderExpandedRow?: (row: TData) => Snippet<[]>;
+	//renderExpandedRow?: (row: TData) => Snippet<[]>;
+	renderExpandedRow?: Snippet<[{ row: TData }]>;
 	onClickRow?: (row: TData) => void;
 	initialColumnVisibility?: ColumnVisibility<TData>;
 	// Props para manejar filtros externos

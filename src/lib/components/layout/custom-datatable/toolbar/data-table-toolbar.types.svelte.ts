@@ -2,6 +2,10 @@ import type { Table } from '@tanstack/svelte-table';
 import type { IconProps } from 'lucide-svelte';
 import type { Component, Snippet } from 'svelte';
 
+export type ToolbarActionsSnippet<TData> = Snippet<[{
+    table: Table<TData>;
+}]>;
+
 export type FacetedFilter<TValue> = {
     column: string;
     title: string;
@@ -16,9 +20,7 @@ export type FacetedFilter<TValue> = {
 
 export type DataTableToolbarProps<TData, TValue> = {
 	table: Table<TData>;
-	toolbarActions?: Snippet<[{
-        table: Table<TData>;
-    }]>
+	toolbarActions?: ToolbarActionsSnippet<TData>;
 	filterPlaceholder?: string;
 	facetedFilters?: FacetedFilter<TValue>[];
 	externalFilterValue?: string;

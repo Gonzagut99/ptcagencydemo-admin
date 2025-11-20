@@ -1,4 +1,5 @@
 <script lang="ts" module>
+	export { DragHandle };
 	// export const columns: ColumnDef<Schema>[] = [
 	// 	{
 	// 		id: 'drag',
@@ -67,7 +68,7 @@
 	export const datatableStateContextKey = Symbol('datatable-state-key');
 </script>
 
-<script lang="ts" generics="TData, TValue">
+<script lang="ts" generics="TData extends BasicEntity, TValue">
 	import {
 		getCoreRowModel,
 		getFacetedRowModel,
@@ -77,6 +78,7 @@
 		getSortedRowModel,
 		type ColumnDef,
 		type ColumnFiltersState,
+		type FilterFn,
 		type PaginationState,
 		type Row,
 		type RowSelectionState,
@@ -114,29 +116,155 @@
 	import { toast } from 'svelte-sonner';
 	import DataTableCheckbox from './data-table-checkbox.svelte';
 	import DataTableCellViewer from './data-table-cell-viewer.svelte';
-	import { createRawSnippet, onMount, setContext } from 'svelte';
+	import { createRawSnippet, onMount, setContext, untrack } from 'svelte';
 	import { DragDropProvider } from '@dnd-kit-svelte/svelte';
 	import { move } from '@dnd-kit/helpers';
 	import { useSortable } from '@dnd-kit-svelte/svelte/sortable';
 	import { Database } from '@lucide/svelte';
 	import { setDatatableState, useDatatableContext } from './use-datatable-state.svelte';
 	import type { CustomDataTableProps } from './datatable-types.svelte';
+	import DataTableToolbar from './toolbar/data-table-toolbar.svelte';
+	import type { BasicEntity } from '$lib/api/config';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { v4 as uuidv4 } from 'uuid';
+	import { cn } from '$lib/utils';
+	import DatatablePagination from './pagination/datatable-pagination.svelte';
+	// class ServerPaginationState implements PaginationState{
+	// 	#pageIndex: number = $state(0);
+	// 	#pageSize: number = $state(10);
+
+	// 	constructor({
+	// 		pageIndex = 0,
+	// 		pageSize = 10
+	// 	}: Partial<PaginationState>){
+	// 		this.#pageIndex = pageIndex;
+	// 		this.#pageSize = pageSize;
+	// 	}
+
+	// 	get pageIndex() {
+	// 		return this.#pageIndex;
+	// 	}
+
+	// 	set pageIndex(value: number) {
+	// 		this.#pageIndex = value;
+	// 	}
+
+	// 	get pageSize() {
+	// 		return this.#pageSize;
+	// 	}
+
+	// 	set pageSize(value: number) {
+	// 		this.#pageSize = value;
+	// 	}
+
+	// 	setPagination(pagination: PaginationState) {
+	// 		this.pageIndex = pagination.pageIndex;
+	// 		this.pageSize = pagination.pageSize;
+	// 	}
+
+	// 	handlePaginationChange(updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)) {
+	//         const newPagination = typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
+
+	//         this.setPagination(newPagination);
+	//         if (serverPagination?.onPaginationChange) {
+	//             serverPagination.onPaginationChange(newPagination.pageIndex, newPagination.pageSize);
+	//         }
+	//     }
+	// }
+
+	// const serverPaginationConfig = new ServerPaginationState({
+
+	// });
 
 	let {
 		data,
 		columns,
-		externalGlobalFilter = $bindable()
+		externalGlobalFilter,
+		facetedFilters,
+		filterPlaceholder,
+		toolbarActions,
+		loadingRowsCount = 5,
+		isLoading = false,
+		strikethroughCondition,
+		strikethroughField,
+		strikethroughValue,
+		serverPagination,
+		updatedColumnVisibilityConfig,
+		getRowCanExpand,
+		getSubRows,
+		renderExpandedRow,
+		onClickRow,
+		initialColumnVisibility,
+		onGlobalFilterChange,
+		externalFilterValue = $bindable()
 	}: CustomDataTableProps<TData, TValue> = $props();
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
 	let sorting = $state<SortingState>([]);
 	let columnFilters = $state<ColumnFiltersState>([]);
 	let rowSelection = $state<RowSelectionState>({});
-	let columnVisibility = $state<VisibilityState>({});
+	let globalFilter = $state(externalGlobalFilter ?? '');
+	let columnVisibility = $state<VisibilityState>(
+		(initialColumnVisibility as VisibilityState) ?? {}
+	);
+	const handlePaginationChange = (
+		updaterOrValue: PaginationState | ((old: PaginationState) => PaginationState)
+	) => {
+		const newPagination =
+			typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
+
+		pagination = newPagination;
+		if (serverPagination?.onPaginationChange) {
+			serverPagination.onPaginationChange(newPagination.pageIndex, newPagination.pageSize);
+		}
+	};
+	const globalFilterFn: FilterFn<any> = (row, columnId, value) => {
+		const getValue = (row: Row<any>) => {
+			// Accede a los valores originales de la fila
+			const rowValue =
+				columnId === '_all' ? Object.values(row.original).join(' ') : row.getValue(columnId);
+
+			// Convierte a string para la comparación
+			return typeof rowValue === 'string' ? rowValue.toLowerCase() : String(rowValue).toLowerCase();
+		};
+
+		const searchValue = value.toLowerCase();
+		return getValue(row).includes(searchValue);
+	};
+
+	const handleGlobalFilterChange = (value: string) => {
+		globalFilter = value;
+		if (onGlobalFilterChange) {
+			onGlobalFilterChange(value);
+		}
+	};
+
+	$effect(() => {
+		if (updatedColumnVisibilityConfig) {
+			untrack(() => {
+				table.setColumnVisibility((prev) => {
+					// Mantenemos la visibilidad de las columnas que ya están visibles
+					const updatedVisibility = { ...prev, ...updatedColumnVisibilityConfig };
+					return updatedVisibility;
+				});
+			});
+		}
+	});
+	$effect(() => {
+		if (externalFilterValue !== undefined) {
+			globalFilter = externalFilterValue;
+		}
+	});
+
 	const options: TableOptions<TData> = $derived({
 		get data() {
 			return data;
 		},
 		columns,
+		getRowCanExpand,
+		getSubRows,
+		onClickRow,
+		initialColumnVisibility,
+		externalFilterValue,
 		state: {
 			get pagination() {
 				return pagination;
@@ -152,23 +280,28 @@
 			},
 			get columnFilters() {
 				return columnFilters;
+			},
+			get globalFilter() {
+				return globalFilter;
 			}
 		},
 		//getRowId: (row) => row.id.toString(),
 		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
+		getPaginationRowModel: serverPagination ? undefined : getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFacetedRowModel: getFacetedRowModel(),
 		getFacetedUniqueValues: getFacetedUniqueValues(),
 		getFilteredRowModel: getFilteredRowModel(),
-		onPaginationChange: (updater) => {
-			if (typeof updater === 'function') {
-				pagination = updater(pagination);
-			} else {
-				pagination = updater;
-			}
+		onPaginationChange: handlePaginationChange,
+		onGlobalFilterChange: handleGlobalFilterChange,
+		globalFilterFn,
+		// Aplicar el filtro global a todas las columnas
+		filterFns: {
+			global: globalFilterFn
 		},
+		pageCount: serverPagination?.pageCount ?? -1,
+		manualPagination: !!serverPagination,
 		onSortingChange: (updater) => {
 			if (typeof updater === 'function') {
 				sorting = updater(sorting);
@@ -230,6 +363,14 @@
 
 	let view = $state('outline');
 	let viewLabel = $derived(views.find((v) => view === v.id)?.label ?? 'Select a view');
+	const getStrikeThroughClass = (rowOriginal: TData) => {
+		return (strikethroughCondition && strikethroughCondition(rowOriginal)) ||
+			(strikethroughField &&
+				strikethroughValue !== undefined &&
+				rowOriginal[strikethroughField] === strikethroughValue)
+			? 'line-through opacity-60'
+			: '';
+	};
 </script>
 
 <Tabs.Root value="outline" class="w-full flex-col justify-start gap-6">
@@ -290,120 +431,58 @@
 		</div>
 	</div>
 	<Tabs.Content value="outline" class="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
-		<div class="overflow-hidden rounded-lg border">
-			<DragDropProvider
-				modifiers={[
-					// @ts-expect-error @dnd-kit/abstract types are botched atm
-					RestrictToVerticalAxis
-				]}
-				onDragEnd={(e) => (data = move(data, e))}
-			>
-				<Table.Root>
-					<Table.Header class="sticky top-0 z-10 bg-muted">
-						{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-							<Table.Row>
-								{#each headerGroup.headers as header (header.id)}
-									<Table.Head colspan={header.colSpan}>
-										{#if !header.isPlaceholder}
-											<FlexRender
-												content={header.column.columnDef.header}
-												context={header.getContext()}
-											/>
-										{/if}
-									</Table.Head>
+		<div class="space-y-4">
+			<div class="overflow-hidden rounded-lg border">
+				<DataTableToolbar
+					{table}
+					{facetedFilters}
+					{filterPlaceholder}
+					bind:externalFilterValue
+					onGlobalFilterChange={(value: string) => {
+						// externalGlobalFilter = value;
+						console.log(value);
+					}}
+					{toolbarActions}
+				></DataTableToolbar>
+				<DragDropProvider
+					modifiers={[
+						// @ts-expect-error @dnd-kit/abstract types are botched atm
+						RestrictToVerticalAxis
+					]}
+					onDragEnd={(e) => (data = move(data, e))}
+				>
+					<Table.Root>
+						<Table.Header class="sticky top-0 z-10 bg-muted">
+							{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+								<Table.Row>
+									{#each headerGroup.headers as header (header.id)}
+										<Table.Head colspan={header.colSpan}>
+											{#if !header.isPlaceholder}
+												<FlexRender
+													content={header.column.columnDef.header}
+													context={header.getContext()}
+												/>
+											{/if}
+										</Table.Head>
+									{/each}
+								</Table.Row>
+							{/each}
+						</Table.Header>
+						<Table.Body class="**:data-[slot=table-cell]:first:w-8">
+							{#if isLoading}
+								{@render SkeletonRows()}
+							{:else if table.getRowModel().rows?.length}
+								{#each table.getRowModel().rows as row, index (row.id)}
+									{@render DraggableRow({ row, index })}
 								{/each}
-							</Table.Row>
-						{/each}
-					</Table.Header>
-					<Table.Body class="**:data-[slot=table-cell]:first:w-8">
-						{#if table.getRowModel().rows?.length}
-							{#each table.getRowModel().rows as row, index (row.id)}
-								{@render DraggableRow({ row, index })}
-							{/each}
-						{:else}
-							<Table.Row>
-								<Table.Cell colspan={columns.length} class="h-24 text-center">
-									<Database></Database>
-									Sin datos
-								</Table.Cell>
-							</Table.Row>
-						{/if}
-					</Table.Body>
-				</Table.Root>
-			</DragDropProvider>
-		</div>
-		<div class="flex items-center justify-between px-4">
-			<div class="hidden flex-1 text-sm text-muted-foreground lg:flex">
-				{table.getFilteredSelectedRowModel().rows.length} of
-				{table.getFilteredRowModel().rows.length} row(s) selected.
+							{:else}
+								{@render EmptyData()}
+							{/if}
+						</Table.Body>
+					</Table.Root>
+				</DragDropProvider>
 			</div>
-			<div class="flex w-full items-center gap-8 lg:w-fit">
-				<div class="hidden items-center gap-2 lg:flex">
-					<Label for="rows-per-page" class="text-sm font-medium">Rows per page</Label>
-					<Select.Root
-						type="single"
-						bind:value={
-							() => `${table.getState().pagination.pageSize}`, (v) => table.setPageSize(Number(v))
-						}
-					>
-						<Select.Trigger size="sm" class="w-20" id="rows-per-page">
-							{table.getState().pagination.pageSize}
-						</Select.Trigger>
-						<Select.Content side="top">
-							{#each [10, 20, 30, 40, 50] as pageSize (pageSize)}
-								<Select.Item value={pageSize.toString()}>
-									{pageSize}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="flex w-fit items-center justify-center text-sm font-medium">
-					Page {table.getState().pagination.pageIndex + 1} of
-					{table.getPageCount()}
-				</div>
-				<div class="ml-auto flex items-center gap-2 lg:ml-0">
-					<Button
-						variant="outline"
-						class="hidden h-8 w-8 p-0 lg:flex"
-						onclick={() => table.setPageIndex(0)}
-						disabled={!table.getCanPreviousPage()}
-					>
-						<span class="sr-only">Go to first page</span>
-						<ChevronsLeftIcon />
-					</Button>
-					<Button
-						variant="outline"
-						class="size-8"
-						size="icon"
-						onclick={() => table.previousPage()}
-						disabled={!table.getCanPreviousPage()}
-					>
-						<span class="sr-only">Go to previous page</span>
-						<ChevronLeftIcon />
-					</Button>
-					<Button
-						variant="outline"
-						class="size-8"
-						size="icon"
-						onclick={() => table.nextPage()}
-						disabled={!table.getCanNextPage()}
-					>
-						<span class="sr-only">Go to next page</span>
-						<ChevronRightIcon />
-					</Button>
-					<Button
-						variant="outline"
-						class="hidden size-8 lg:flex"
-						size="icon"
-						onclick={() => table.setPageIndex(table.getPageCount() - 1)}
-						disabled={!table.getCanNextPage()}
-					>
-						<span class="sr-only">Go to last page</span>
-						<ChevronsRightIcon />
-					</Button>
-				</div>
-			</div>
+			<DatatablePagination {table} {serverPagination} />
 		</div>
 	</Tabs.Content>
 	<Tabs.Content value="past-performance" class="flex flex-col px-4 lg:px-6">
@@ -417,7 +496,7 @@
 	</Tabs.Content>
 </Tabs.Root>
 
-{#snippet DataTableLimit({ row }: { row: Row<Schema> })}
+<!-- {#snippet DataTableLimit({ row }: { row: Row<Schema> })}
 	<form
 		onsubmit={(e) => {
 			e.preventDefault();
@@ -435,9 +514,9 @@
 			id="{row.original.id}-limit"
 		/>
 	</form>
-{/snippet}
+{/snippet} -->
 
-{#snippet DataTableTarget({ row }: { row: Row<Schema> })}
+<!-- {#snippet DataTableTarget<TData extends { id: string }>({ row }: { row: Row<TData> })}
 	<form
 		onsubmit={(e) => {
 			e.preventDefault();
@@ -455,17 +534,17 @@
 			id="{row.original.id}-target"
 		/>
 	</form>
-{/snippet}
+{/snippet} -->
 
-{#snippet DataTableType({ row }: { row: Row<Schema> })}
+<!-- {#snippet DataTableType<TData extends { id: string }>({ row }: { row: Row<TData> })}
 	<div class="w-32">
 		<Badge variant="outline" class="px-1.5 text-muted-foreground">
 			{row.original.type}
 		</Badge>
 	</div>
-{/snippet}
+{/snippet} -->
 
-{#snippet DataTableStatus({ row }: { row: Row<Schema> })}
+<!-- {#snippet DataTableStatus<TData extends { id: string }>({ row }: { row: Row<TData> })}
 	<Badge variant="outline" class="px-1.5 text-muted-foreground">
 		{#if row.original.status === 'Done'}
 			<CircleCheckFilledIcon class="fill-green-500 dark:fill-green-400" />
@@ -474,15 +553,15 @@
 		{/if}
 		{row.original.status}
 	</Badge>
-{/snippet}
+{/snippet} -->
 
-{#snippet DataTableActions()}
+<!-- {#snippet DataTableActions()}
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger class="flex size-8 text-muted-foreground data-[state=open]:bg-muted">
 			{#snippet child({ props })}
 				<Button variant="ghost" size="icon" {...props}>
 					<DotsVerticalIcon />
-					<span class="sr-only">Open menu</span>
+					<span class="sr-only">Abrir Menu</span>
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
@@ -494,18 +573,30 @@
 			<DropdownMenu.Item variant="destructive">Delete</DropdownMenu.Item>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
-{/snippet}
+{/snippet} -->
 
-{#snippet DraggableRow({ row, index }: { row: Row<Schema>; index: number })}
+{#snippet DraggableRow({ row, index }: { row: Row<TData>; index: number })}
+	{@const localId =
+		row.original && typeof row.original === 'object' && 'id' in row.original
+			? (row.original.id as string)
+			: uuidv4()}
 	{@const { ref, isDragging, handleRef } = useSortable({
-		id: row.original.id,
+		id: localId,
 		index: () => index
 	})}
+	{@const strikeThroughClass = getStrikeThroughClass(row.original)}
+	{@const expandedClass = row.getIsExpanded() ? 'bg-muted' : ''}
+	{@const clickRowCallback = () => onClickRow?.(row.original)}
 
 	<Table.Row
 		data-state={row.getIsSelected() && 'selected'}
 		data-dragging={isDragging.current}
-		class="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+		class={cn(
+			'relative z-0 cursor-pointer data-[dragging=true]:z-10 data-[dragging=true]:opacity-80',
+			strikeThroughClass,
+			expandedClass
+		)}
+		onclick={clickRowCallback}
 		{@attach ref}
 	>
 		{#each row.getVisibleCells() as cell (cell.id)}
@@ -518,6 +609,17 @@
 			</Table.Cell>
 		{/each}
 	</Table.Row>
+	{#if row.getIsExpanded()}
+		<Table.Row class="bg-muted">
+			<Table.Cell colspan={row.getVisibleCells().length} class="p-0">
+				{#if renderExpandedRow}
+					{@render renderExpandedRow({ row: row.original })}
+				{:else}
+					{'No hay datos disponibles.'}
+				{/if}
+			</Table.Cell>
+		</Table.Row>
+	{/if}
 {/snippet}
 
 {#snippet DragHandle({ attach }: { attach: Attachment })}
@@ -528,6 +630,31 @@
 		class="size-7 text-muted-foreground hover:bg-transparent"
 	>
 		<GripVerticalIcon class="size-3 text-muted-foreground" />
-		<span class="sr-only">Drag to reorder</span>
+		<span class="sr-only">Jale para reordenar</span>
 	</Button>
+{/snippet}
+
+{#snippet SkeletonRows()}
+	{#each Array.from({ length: loadingRowsCount }) as item, i}
+		<Table.Row>
+			{#each columns as col}
+				<Table.Cell>
+					<Skeleton class="h-4 w-full rounded-md" />
+				</Table.Cell>
+			{/each}
+		</Table.Row>
+	{/each}
+{/snippet}
+
+{#snippet EmptyData()}
+	<Table.Row>
+		<Table.Cell colspan={columns.length} class="h-24 text-center">
+			<Database class="size-10 text-slate-300" strokeWidth={1}></Database>
+			Sin datos
+		</Table.Cell>
+	</Table.Row>
+	<!-- <div class="mx-auto flex w-fit flex-col items-center font-light text-slate-400">
+		<Database class="size-10 text-slate-300" strokeWidth={1} />
+		Sin datos
+	</div> -->
 {/snippet}
